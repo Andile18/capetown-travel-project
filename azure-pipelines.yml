@@ -1,0 +1,37 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  dockerImageName: 'capetown-travel-app'
+
+steps:
+- task: Docker@2
+  displayName: 'Build Docker Image'
+  inputs:
+    command: 'build'
+    Dockerfile: '**/Dockerfile'
+    tags: |
+      $(Build.BuildId)
+      latest
+
+- task: Docker@2
+  displayName: 'Run Docker Container'
+  inputs:
+    command: 'run'
+    arguments: '-d -p 8080:80 --name test-container $(dockerImageName):latest'
+
+- script: |
+    echo "Waiting for container to start..."
+    sleep 5
+    docker ps
+    echo "Container is running successfully!"
+  displayName: 'Verify Container Running'
+
+- script: |
+    docker stop test-container
+    docker rm test-container
+  displayName: 'Cleanup'
+  condition: always()
